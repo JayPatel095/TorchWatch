@@ -1,0 +1,59 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ptwatch"
+version = "0.1.0"
+description = "A btop for your PyTorch GPU jobs: live terminal dashboard for training runs"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+authors = [
+    { name = "Jay Patel", email = "jayashish.patel@mail.utoronto.ca" },
+]
+keywords = ["pytorch", "gpu", "monitoring", "tui", "terminal", "training"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: System :: Monitoring",
+]
+dependencies = [
+    "textual",
+    "pynvml",
+    "psutil",
+    "click",
+    "msgpack",
+]
+
+[project.urls]
+Homepage = "https://github.com/jaypatel/ptwatch"
+
+[project.scripts]
+ptwatch = "ptwatch.cli:main"
+
+[project.optional-dependencies]
+dev = [
+    "ruff",
+    "mypy",
+    "pytest",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["ptwatch"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
