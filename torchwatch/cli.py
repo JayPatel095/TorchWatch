@@ -18,22 +18,10 @@ def main(ctx: click.Context, pid: int | None, poll: int, no_stdout: bool) -> Non
     """
     if ctx.invoked_subcommand is not None:
         return
-    from torchwatch.collector.nvidia import GiB, create_collector
 
-    collector, fallback_reason = create_collector()
-    if fallback_reason is not None:
-        click.echo(f"NVML unavailable ({fallback_reason}) — showing mock data", err=True)
-    click.echo(f"{collector.gpu_count()} GPU(s) detected")
-    for gpu in collector.sample():
-        util = f"{gpu.utilization_pct}%" if gpu.utilization_pct is not None else "—"
-        temp = f"{gpu.temperature_c}°C" if gpu.temperature_c is not None else "—"
-        power = f"{gpu.power_w:.0f}W" if gpu.power_w is not None else "—"
-        click.echo(
-            f"GPU {gpu.index}  {gpu.name}  util {util}  "
-            f"vram {gpu.vram_used_bytes / GiB:.1f}/{gpu.vram_total_bytes / GiB:.1f} GiB  "
-            f"temp {temp}  power {power}"
-        )
-    collector.close()
+    from torchwatch.app import TorchwatchApp
+    app = TorchwatchApp(poll_ms=poll, pid=pid)
+    app.run()
 
 
 @main.command("list")
