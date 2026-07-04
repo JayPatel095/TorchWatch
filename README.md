@@ -17,4 +17,4 @@ torchwatch --pid 12345    # attach to a specific process
 torchwatch list           # list running PyTorch processes
 ```
 
-*Work in progress — see `ptwatch_claude_code_brief.md` for the roadmap.*
+*Work in progress.*
