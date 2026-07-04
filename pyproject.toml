@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "ptwatch"
+name = "torchwatch"
 version = "0.1.0"
 description = "A btop for your PyTorch GPU jobs: live terminal dashboard for training runs"
 readme = "README.md"
@@ -35,10 +35,10 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/jaypatel/ptwatch"
+Homepage = "https://github.com/jaypatel/torchwatch"
 
 [project.scripts]
-ptwatch = "ptwatch.cli:main"
+torchwatch = "torchwatch.cli:main"
 
 [project.optional-dependencies]
 dev = [
@@ -48,7 +48,7 @@ dev = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["ptwatch"]
+packages = ["torchwatch"]
 
 [tool.ruff]
 line-length = 100

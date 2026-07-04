@@ -1,4 +1,4 @@
-# ptwatch
+# torchwatch
 
 A btop for your PyTorch GPU jobs: live per-GPU utilization, VRAM pressure, training
 throughput, loss curve, and ETA — all in your terminal, with zero code changes.
@@ -6,15 +6,15 @@ throughput, loss curve, and ETA — all in your terminal, with zero code changes
 ## Install
 
 ```
-pip install ptwatch
+pip install torchwatch
 ```
 
 ## Run
 
 ```
-ptwatch                # auto-detect the first PyTorch process and attach
-ptwatch --pid 12345    # attach to a specific process
-ptwatch list           # list running PyTorch processes
+torchwatch                # auto-detect the first PyTorch process and attach
+torchwatch --pid 12345    # attach to a specific process
+torchwatch list           # list running PyTorch processes
 ```
 
-*Work in progress — see `ptwatch_project_brief.md` for the roadmap.*
+*Work in progress — see `ptwatch_claude_code_brief.md` for the roadmap.*
