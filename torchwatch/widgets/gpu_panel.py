@@ -3,10 +3,10 @@
 Renders one GPU's live stats — utilization, VRAM, temperature, power — as a
 two-line bordered box:
 
-    ┌─ GPU 0 · NVIDIA A100 80GB ───────────────┐
+    ┌─ GPU 0 · NVIDIA A100 80GB ────────────────┐
     │ util  94% ██████████████████░░  temp 71°C │
     │ vram 74.2/80.0 GiB (93%)      power 312W  │
-    └──────────────────────────────────────────┘
+    └───────────────────────────────────────────┘
 
 The app owns polling and assigns `panel.sample = <GpuSample>` each tick; the
 `reactive` attribute triggers `watch_sample`, which redraws the widget.
@@ -39,7 +39,7 @@ def pressure_color(pct: float) -> str:
 
 def bar(pct: float | None, width: int = 20) -> str:
     """Render a fixed-width horizontal gauge like "██████████░░░░░░░░░░"
-    for a 0–100 percentage; None (metric unsupported) gives an empty bar."""
+    for a 0-100 percentage. None (metric unsupported) gives an empty bar."""
     if pct is None:
         return "░" * width
 
@@ -49,7 +49,7 @@ def bar(pct: float | None, width: int = 20) -> str:
 
 
 class GpuPanel(Static):
-    """Displays one GPU's live stats. The app owns polling; this only renders."""
+    """Displays one GPU's live stats. The app owns polling, this only renders."""
 
     # Assigning `panel.sample = <GpuSample>` triggers watch_sample() below.
     sample: reactive[GpuSample | None] = reactive(None)
