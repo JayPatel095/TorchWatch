@@ -2,7 +2,7 @@
 
 import click
 
-from ptwatch import __version__
+from torchwatch import __version__
 
 
 @click.group(invoke_without_command=True)
