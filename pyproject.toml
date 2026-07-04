@@ -28,7 +28,7 @@ classifiers = [
 ]
 dependencies = [
     "textual",
-    "pynvml",
+    "nvidia-ml-py",
     "psutil",
     "click",
     "msgpack",
