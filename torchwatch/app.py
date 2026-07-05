@@ -118,7 +118,10 @@ class TorchwatchApp(App[None]):
 
     def _apply_samples(self, samples: list[GpuSample]) -> None:
         """UI thread: create or update one GpuPanel per sample."""
-        grid = self.query_one("#gpu-grid", Grid)
+        try:
+            grid = self.query_one("#gpu-grid", Grid)
+        except NoMatches:
+            return
 
         for sample in samples:
             try:
