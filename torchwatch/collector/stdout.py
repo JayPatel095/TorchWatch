@@ -43,8 +43,27 @@ class TrainingUpdate:
     format_name: str
 
 
+# Loss values in the wild: '0.4230', '2.5e-05', 'nan', 'inf'. float() takes all.
+_NUM = r"(?:nan|inf|[\d.eE+-]+)"
+
+# The tqdm signature: the `N/M [` counter right before the timing bracket.
+# The loss postfix is optional (early frames have none) and may be followed by
+# further postfix pairs (Lightning appends v_num=...), so no closing anchor.
+_BAR = r"(?P<step>\d+)/(?P<total>\d+)\s*\[(?:[^\]]*?[,\s]loss=(?P<loss>" + _NUM + r"))?"
+
 # Ordered by priority: first match wins per line.
-FORMATS: list[tuple[str, re.Pattern[str]]] = []
+FORMATS: list[tuple[str, re.Pattern[str]]] = [
+    # Lightning wraps tqdm — the `Epoch N/M:` prefix is its only tell, so it
+    # must outrank the generic tqdm pattern.
+    (LIGHTNING, re.compile(r"Epoch \d+(?:/\d+)?:\s.*?" + _BAR)),
+    (TQDM, re.compile(_BAR)),
+    # Quote-anchored: 'eval_loss'/'train_loss' contain loss but not 'loss'.
+    (HF_TRAINER, re.compile(r"[{,]\s*'loss':\s*(?P<loss>" + _NUM + r")")),
+    (PLAIN, re.compile(
+        r"(?i)\bstep\s+(?P<step>\d+)/(?P<total>\d+)"
+        r".*?\bloss\s*[:=]\s*(?P<loss>" + _NUM + r")"
+    )),
+]
 
 
 class StdoutParser:
@@ -74,7 +93,7 @@ class StdoutParser:
                 continue
             
             self.matched_format = name
-            self.formats_seen.add(name) # this format stuff is confusing..
+            self.formats_seen.add(name)
             
             gd = match.groupdict()
 
