@@ -1,0 +1,6 @@
+/usr/lib/python3/site-packages/torch/cuda/__init__.py:123: UserWarning: CUDA initialization: forked subprocess
+INFO: Using device cuda:0 (NVIDIA A100 80GB)
+wandb: View run at https://wandb.ai/jay/proj/runs/abc123
+Files already downloaded and verified
+{'accuracy': 0.912, 'f1': 0.884}
+Saving checkpoint to ./checkpoints/epoch-1/

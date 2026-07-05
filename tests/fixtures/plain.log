@@ -1,0 +1,6 @@
+Starting training with 1000 steps, lr=0.001, batch_size=64
+Step 100/1000 | loss: 0.4230 | lr: 0.001
+Step 200/1000 | loss: 0.3891 | lr: 0.001
+Step 300/1000 | loss: 0.3514 | lr: 0.0009
+Epoch 2 | Step 350/1000 | Loss=0.3312
+Step 400/1000 | loss: 0.3120 | lr: 0.0009

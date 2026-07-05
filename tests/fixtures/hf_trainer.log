@@ -1,0 +1,7 @@
+  0%|          | 0/500 [00:00<?, ?it/s]
+{'loss': 2.4915, 'grad_norm': 8.301953315734863, 'learning_rate': 4.95e-05, 'epoch': 0.1}
+ 10%|█         | 50/500 [00:12<01:52,  4.01it/s]
+{'loss': 1.9847, 'grad_norm': 6.192838191986084, 'learning_rate': 4.85e-05, 'epoch': 0.2}
+{'eval_loss': 1.7523119449615479, 'eval_runtime': 12.4817, 'eval_samples_per_second': 80.117, 'epoch': 1.0}
+100%|██████████| 500/500 [02:05<00:00,  4.00it/s]
+{'train_runtime': 125.9012, 'train_samples_per_second': 79.428, 'train_steps_per_second': 3.972, 'train_loss': 1.8912, 'epoch': 2.0}
