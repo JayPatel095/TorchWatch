@@ -67,4 +67,31 @@ class StdoutParser:
         returned as a TrainingUpdate (absent groups become None). Lines
         matching no format return None.
         """
-        raise NotImplementedError
+        for name, pattern in FORMATS:
+            match = pattern.search(line)
+
+            if match is None:
+                continue
+            
+            self.matched_format = name
+            self.formats_seen.add(name) # this format stuff is confusing..
+            
+            gd = match.groupdict()
+
+            step = gd.get("step")
+            if step is not None:
+                step = int(step)
+
+            total = gd.get("total")
+            if total is not None:
+                total = int(total)
+
+            loss = gd.get("loss")
+            if loss is not None:
+                loss = float(loss)
+
+            return TrainingUpdate(step=step, total_steps=total, loss=loss, format_name=name)
+        
+        return None
+
+
