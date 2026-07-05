@@ -10,8 +10,9 @@ from torchwatch import __version__
 @click.option("--pid", type=int, default=None, help="Attach to a specific PyTorch process.")
 @click.option("--poll", type=int, default=500, help="Poll interval in milliseconds.")
 @click.option("--no-stdout", is_flag=True, help="Disable stdout parsing (shared memory only).")
+@click.option("--demo", is_flag=True, help="Show synthetic training metrics (no process attach).")
 @click.pass_context
-def main(ctx: click.Context, pid: int | None, poll: int, no_stdout: bool) -> None:
+def main(ctx: click.Context, pid: int | None, poll: int, no_stdout: bool, demo: bool) -> None:
     """torchwatch: a btop for your PyTorch GPU jobs.
 
     With no subcommand, auto-detects the first PyTorch process and attaches.
@@ -20,7 +21,13 @@ def main(ctx: click.Context, pid: int | None, poll: int, no_stdout: bool) -> Non
         return
 
     from torchwatch.app import TorchwatchApp
-    app = TorchwatchApp(poll_ms=poll, pid=pid)
+
+    metrics_source = None
+    if demo:
+        from torchwatch.collector.demo import DemoMetrics
+
+        metrics_source = DemoMetrics()
+    app = TorchwatchApp(poll_ms=poll, pid=pid, metrics_source=metrics_source)
     app.run()
 
 
