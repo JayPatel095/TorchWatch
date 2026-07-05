@@ -23,7 +23,29 @@ def spark(values: list[float], width: int = 40) -> str:
     - A flat window (hi == lo) renders mid-blocks: BLOCKS[3] for every value.
     - Only the most recent `width` values are drawn; older ones scroll off.
     """
-    raise NotImplementedError
+    if values is None:
+        return ""
+    
+    n = len(values)
+
+    if n > width:
+        latest_values = values[:-width]
+    else:
+        latest_values = values[:]
+
+    lo = min(latest_values)
+    hi = max(latest_values)
+    
+    if hi == lo:
+        return n * BLOCKS[3]
+
+    text = []
+    
+    for val in latest_values:
+        level = round((val - lo) / (hi - lo) * 7)
+        text.append(BLOCKS[level])
+
+    return "".join(text)
 
 
 class LossSparkline(Static):
