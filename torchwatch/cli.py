@@ -31,6 +31,26 @@ def main(ctx: click.Context, pid: int | None, poll: int, no_stdout: bool, demo: 
     app.run()
 
 
+@main.command("run", context_settings={"ignore_unknown_options": True})
+@click.argument("command", nargs=-1, required=True, type=click.UNPROCESSED)
+@click.option("--poll", type=int, default=500, help="GPU poll interval in milliseconds.")
+def run_training(command: tuple[str, ...], poll: int) -> None:
+    """Launch a training command and watch it: torchwatch run -- python train.py
+
+    The command runs as a child of torchwatch under a pseudo-terminal;
+    quitting the dashboard terminates it.
+    """
+    from torchwatch.app import TorchwatchApp
+    from torchwatch.collector.wrapper import WrapperSource
+
+    source = WrapperSource(list(command))
+    source.start()
+    try:
+        TorchwatchApp(poll_ms=poll, pid=source.pid, metrics_source=source).run()
+    finally:
+        source.close()
+
+
 @main.command("list")
 def list_processes() -> None:
     """List running PyTorch processes and exit."""
