@@ -15,6 +15,7 @@ class EtaBar(Static):
         step: int | None,
         total_steps: int | None,
         rate: float | None,
+        elapsed_text: str,
         eta_text: str,
     ) -> None:
         if step is not None and total_steps:
@@ -24,4 +25,4 @@ class EtaBar(Static):
         else:
             step_txt = "step —"
         rate_txt = f"{rate:.1f} it/s" if rate else "— it/s"
-        self.update(f"{step_txt} · {rate_txt} · ETA {eta_text}")
+        self.update(f"elapsed {elapsed_text} · {step_txt} · {rate_txt} · ETA {eta_text}")

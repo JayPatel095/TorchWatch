@@ -200,12 +200,10 @@ class TorchwatchApp(App[None]):
         eta = None
         if update.step is not None and update.total_steps:
             eta = self._eta.eta_seconds(update.step, update.total_steps)
-        f_eta = format_time(eta)
+        f_eta = format_time(eta) if eta is None else "~" + format_time(eta)
 
         elapsed = time.time() - self._start_time
         f_elapsed = format_time(elapsed)
-        if elapsed is not None:
-            f_elapsed = "~" + f_elapsed
 
         eta_bar.update_metrics(
             update.step, update.total_steps, self._eta.steps_per_sec(), f_elapsed, f_eta
