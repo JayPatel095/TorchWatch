@@ -56,8 +56,8 @@ def format_eta(seconds: float | None) -> str:
     """Human ETA: None → "—", 42 → "~42s", 872 → "~14m 32s", 3725 → "~1h 2m".
     """
 
-    if seconds == None:
-        return "-"
+    if seconds is None:
+        return "—"
     
     s = int(seconds)
 
