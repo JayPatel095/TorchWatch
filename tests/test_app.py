@@ -8,8 +8,11 @@ startup" requirement is met.
 import asyncio
 
 from torchwatch.app import TorchwatchApp
+from torchwatch.collector.demo import DemoMetrics
 from torchwatch.collector.nvidia import MockCollector
+from torchwatch.widgets.eta_bar import EtaBar
 from torchwatch.widgets.gpu_panel import GpuPanel
+from torchwatch.widgets.sparkline import LossSparkline
 
 
 def test_panels_mount_and_update_live():
@@ -57,5 +60,30 @@ def test_panels_mount_and_update_live():
                     break
             else:
                 raise AssertionError("samples never resumed after unpausing")
+
+    asyncio.run(scenario())
+
+
+def test_metrics_pipeline_reaches_widgets():
+    """With a metrics source attached, loss values must reach the sparkline
+    and the ETA bar must render a progress line — end to end through the
+    metrics worker, _apply_update, and the widgets."""
+
+    async def scenario() -> None:
+        app = TorchwatchApp(
+            poll_ms=200,
+            collector=MockCollector(count=1, seed=3),
+            metrics_source=DemoMetrics(total_steps=200, seed=5),
+        )
+        async with app.run_test(size=(100, 40)) as pilot:
+            for _ in range(60):
+                await pilot.pause(0.05)
+                spark_widget = app.query_one("#loss-spark", LossSparkline)
+                if len(spark_widget._values) >= 3:
+                    break
+            else:
+                raise AssertionError("no loss values reached the sparkline widget")
+            bar_text = str(app.query_one("#eta-bar", EtaBar).render())
+            assert "step " in bar_text and "ETA" in bar_text
 
     asyncio.run(scenario())

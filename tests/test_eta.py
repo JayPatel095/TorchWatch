@@ -2,7 +2,7 @@
 
 import pytest
 
-from torchwatch.eta import EtaEstimator, format_eta
+from torchwatch.eta import EtaEstimator, format_time
 
 
 def test_steady_rate_and_eta():
@@ -55,9 +55,10 @@ def test_step_regression_resets():
     assert est.steps_per_sec() == pytest.approx(50.0)
 
 
-def test_format_eta():
-    assert format_eta(None) == "—"
-    assert format_eta(42) == "~42s"
-    assert format_eta(872) == "~14m 32s"
-    assert format_eta(3725) == "~1h 2m"
-    assert format_eta(0) == "~0s"
+def test_format_time():
+    # tilde-free: callers add "~" only for estimates (ETA yes, elapsed no)
+    assert format_time(None) == "—"
+    assert format_time(42) == "42s"
+    assert format_time(872) == "14m 32s"
+    assert format_time(3725) == "1h 2m"
+    assert format_time(0) == "0s"
