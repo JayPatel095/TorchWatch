@@ -16,7 +16,7 @@ Contract:
 """
 
 from __future__ import annotations
-
+import re
 
 class FrameAssembler:
     def __init__(self) -> None:
@@ -24,8 +24,17 @@ class FrameAssembler:
 
     def feed(self, chunk: str) -> list[str]:
         """Absorb one chunk; return the frames it completed."""
-        raise NotImplementedError
+        self._buf += chunk
+        
+        parts = re.split(r"[\r\n]+", self._buf)
+        self._buf = parts[-1]
+
+        return [frame for frame in parts[:-1] if frame.strip()]
 
     def flush(self) -> str | None:
         """Return the final unterminated frame (if non-blank) and reset."""
-        raise NotImplementedError
+        temp = self._buf
+        self._buf = ""
+        
+        return temp if temp.strip() else None
+
