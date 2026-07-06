@@ -52,8 +52,8 @@ class EtaEstimator:
         return (total_steps - current_step) / rate
         
 
-def format_eta(seconds: float | None) -> str:
-    """Human ETA: None → "—", 42 → "~42s", 872 → "~14m 32s", 3725 → "~1h 2m".
+def format_time(seconds: float | None) -> str:
+    """Human Time: None → "—", 42 → "42s", 872 → "14m 32s", 3725 → "1h 2m".
     """
 
     if seconds is None:
@@ -62,8 +62,8 @@ def format_eta(seconds: float | None) -> str:
     s = int(seconds)
 
     if s < 60:
-        return f"~{s}s"
+        return f"{s}s"
     elif s < 3600:
-        return f"~{s // 60}m {s % 60}s"
+        return f"{s // 60}m {s % 60}s"
     else:
-        return f"~{s // 3600}h {(s % 3600) // 60}m"
+        return f"{s // 3600}h {(s % 3600) // 60}m"

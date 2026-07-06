@@ -30,7 +30,7 @@ from textual.worker import get_current_worker
 
 from torchwatch.collector.nvidia import Collector, GpuSample, create_collector
 from torchwatch.collector.stdout import TrainingUpdate
-from torchwatch.eta import EtaEstimator, format_eta
+from torchwatch.eta import EtaEstimator, format_time
 from torchwatch.widgets.eta_bar import EtaBar
 from torchwatch.widgets.gpu_panel import GpuPanel
 from torchwatch.widgets.sparkline import LossSparkline
@@ -98,6 +98,7 @@ class TorchwatchApp(App[None]):
         self.paused = False
         self.metrics_source = metrics_source
         self._eta = EtaEstimator()
+        self._start_time = time.time()
 
     def compose(self) -> ComposeResult:
         """Header bar, GPU grid, metrics panel, keybinding footer."""
@@ -199,8 +200,14 @@ class TorchwatchApp(App[None]):
         eta = None
         if update.step is not None and update.total_steps:
             eta = self._eta.eta_seconds(update.step, update.total_steps)
+        f_eta = format_time(eta)
+
+        elapsed = self._start_time - time.time()
+        f_elapsed = "~" + format(elapsed)
+
+
         eta_bar.update_metrics(
-            update.step, update.total_steps, self._eta.steps_per_sec(), format_eta(eta)
+            update.step, update.total_steps, self._eta.steps_per_sec(), f_elapsed, f_eta
         )
 
     def action_toggle_pause(self) -> None:
