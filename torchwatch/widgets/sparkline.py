@@ -23,13 +23,13 @@ def spark(values: list[float], width: int = 40) -> str:
     - A flat window (hi == lo) renders mid-blocks: BLOCKS[3] for every value.
     - Only the most recent `width` values are drawn; older ones scroll off.
     """
-    if values is None:
+    if not values:
         return ""
     
     n = len(values)
 
     if n > width:
-        latest_values = values[:-width]
+        latest_values = values[-width:]
     else:
         latest_values = values[:]
 
@@ -37,8 +37,8 @@ def spark(values: list[float], width: int = 40) -> str:
     hi = max(latest_values)
     
     if hi == lo:
-        return n * BLOCKS[3]
-
+        return len(latest_values) * BLOCKS[3]
+    
     text = []
     
     for val in latest_values:
