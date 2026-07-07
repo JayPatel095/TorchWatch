@@ -46,6 +46,7 @@ class AlertLog:
 
     def __init__(self, ttl_s: float = 10.0) -> None:
         self.ttl_s = ttl_s
+        self._alerts = {}
 
     def report(self, key: str, message: str, now: float) -> None:
         """Record that `key`'s condition is true at time `now`.
@@ -54,7 +55,22 @@ class AlertLog:
         repeat report refreshes last_seen and replaces the message (the
         numbers inside it may have changed) but keeps first_seen.
         """
-        raise NotImplementedError
+
+        old = self._alerts.get(key)
+        if old is not None and (now - old.last_seen) <= self.ttl_s:
+            self._alerts[key] = Alert(
+                key=key,
+                message=message,
+                first_seen=old.first_seen,
+                last_seen=now,
+            )
+        else:
+            self._alerts[key] = Alert(
+                key=key,
+                message=message,
+                first_seen=now,
+                last_seen=now,
+            )
 
     def active(self, now: float) -> list[Alert]:
         """Alerts still within their lifespan at `now`, oldest first.
@@ -63,8 +79,15 @@ class AlertLog:
         entries are dropped. Ordering by first_seen keeps the display
         stable — entries don't jump around as newer alerts re-fire.
         """
-        raise NotImplementedError
+        active_alerts = []
 
+        for alert in self._alerts.values():
+            if now - alert.last_seen <= self.ttl_s:
+                active_alerts.append(alert)
+        
+        active_alerts.sort(key=lambda x: x.first_seen)
+
+        return active_alerts
 
 def vram_suggestion(vram_pct: float) -> str | None:
     """An actionable hint once VRAM crosses ALERT_PCT; None below it.
