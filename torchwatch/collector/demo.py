@@ -36,3 +36,6 @@ class DemoMetrics:
             loss=round(loss, 4),
             format_name="demo",
         )
+
+    def close(self) -> None:
+        """Nothing to release; exists so the CLI can close any source."""

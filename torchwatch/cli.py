@@ -20,6 +20,9 @@ def main(ctx: click.Context, pid: int | None, poll: int, no_stdout: bool, demo: 
     if ctx.invoked_subcommand is not None:
         return
 
+    if demo and pid is not None:
+        raise click.UsageError("--demo and --pid are mutually exclusive")
+
     from torchwatch.app import TorchwatchApp
 
     metrics_source = None
@@ -27,8 +30,20 @@ def main(ctx: click.Context, pid: int | None, poll: int, no_stdout: bool, demo: 
         from torchwatch.collector.demo import DemoMetrics
 
         metrics_source = DemoMetrics()
-    app = TorchwatchApp(poll_ms=poll, pid=pid, metrics_source=metrics_source)
-    app.run()
+    elif pid is not None:
+        from torchwatch.collector.tail import AttachError, TailSource
+
+        metrics_source = TailSource(pid)
+        try:
+            metrics_source.start()
+        except AttachError as exc:
+            raise click.ClickException(str(exc)) from exc
+
+    try:
+        TorchwatchApp(poll_ms=poll, pid=pid, metrics_source=metrics_source).run()
+    finally:
+        if metrics_source is not None:
+            metrics_source.close()
 
 
 @main.command("run", context_settings={"ignore_unknown_options": True})
