@@ -20,3 +20,29 @@ def test_demo_and_pid_are_mutually_exclusive():
     result = CliRunner().invoke(main, ["--demo", "--pid", "123"])
     assert result.exit_code != 0
     assert "mutually exclusive" in result.output
+
+
+def test_list_prints_detected_processes(monkeypatch):
+    import torchwatch.collector.proc as proc_mod
+    from torchwatch.collector.proc import ProcInfo
+
+    fakes = [
+        ProcInfo(pid=48213, name="python3.11",
+                 cmdline=("python", "train.py", "--epochs", "10"), maps=()),
+        ProcInfo(pid=48190, name="torchrun",
+                 cmdline=("torchrun", "--nproc-per-node=4", "train.py"), maps=()),
+    ]
+    monkeypatch.setattr(proc_mod, "find_pytorch_processes", lambda: fakes)
+    result = CliRunner().invoke(main, ["list"])
+    assert result.exit_code == 0
+    assert "48213" in result.output and "train.py --epochs 10" in result.output
+    assert "48190" in result.output
+
+
+def test_list_reports_nothing_found(monkeypatch):
+    import torchwatch.collector.proc as proc_mod
+
+    monkeypatch.setattr(proc_mod, "find_pytorch_processes", lambda: [])
+    result = CliRunner().invoke(main, ["list"])
+    assert result.exit_code == 0
+    assert "no PyTorch processes found" in result.output
