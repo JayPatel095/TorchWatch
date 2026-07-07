@@ -21,6 +21,7 @@ import os
 import queue
 import threading
 import time
+import stat
 from pathlib import Path
 
 from torchwatch.collector.stdout import StdoutParser, TrainingUpdate
@@ -54,7 +55,28 @@ def resolve_stdout_path(pid: int, proc_root: str | Path = "/proc") -> Path:
     Keep `proc_root` a parameter — the tests point it at a fake /proc tree
     (real /proc does not exist on this Mac).
     """
-    raise NotImplementedError
+
+    link = Path(proc_root) / str(pid) / "fd" / "1"
+    if not link.exists():
+        if not Path(proc_root).exists():
+            raise AttachError(
+                "no /proc filesystem on thie system (macOS?). pid attach is "
+                "Linux-only; use `torchwatch run -- <cmd>` instead"
+            )
+        raise AttachError(
+            f"pid {pid}: {link} not found — the process may have exited, "
+            "or it belongs to another user (permission denied)"
+        )
+    
+    resolved = link.resolve()
+    if stat.S_ISREG(resolved.stat().st_mode) == False:
+        raise AttachError(
+            f"pid {pid}: stdout ({link} → {resolved}) is not a redirected log file. "
+            "reading a terminal or pipe would steal its output. restart it under "
+            "`torchwatch run -- <cmd>`, or redirect next time: python train.py > train.log 2>&1"
+        )
+    
+    return resolved
 
 
 class TailSource:
