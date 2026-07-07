@@ -21,6 +21,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Iterable, Iterator
 
+from pathlib import Path
+
 import psutil
 
 
@@ -52,18 +54,24 @@ def iter_process_info() -> Iterator[ProcInfo]:
 
 
 def is_pytorch_process(info: ProcInfo) -> bool:
-    """Decide whether one process is a PyTorch training candidate.
+    """Decide whether one process is a PyTorch training candidate."""
+    
+    haystack = " ".join((info.name, *info.cmdline))
 
-    The rules (each covered by a test in tests/test_proc.py):
-    1. torchwatch itself (or its CLI) never matches, regardless of evidence.
-    2. `torchrun` or `torch.distributed.run` anywhere in name/cmdline → True.
-    3. A python-ish process (name starts with "python", or argv[0] ends with
-       one) whose maps include a path containing "/torch/" → True.
-    4. Anything else — including python processes with no torch evidence —
-       → False.
-    """
-    raise NotImplementedError
+    if "torchwatch" in haystack:
+        return False
+    
+    if "torchrun" in haystack or "torch.distributed.run" in haystack:
+        return True
+    
+    exe = Path(info.cmdline[0]).name if info.cmdline else ""
+    is_python = info.name.startswith("python") or exe.startswith("python")
+    has_torch = any("/torch/" in path for path in info.maps)
 
+    if is_python and has_torch:
+        return True
+
+    return False
 
 def find_pytorch_processes(
     processes: Iterable[ProcInfo] | None = None,
