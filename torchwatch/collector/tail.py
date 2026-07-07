@@ -38,29 +38,13 @@ class AttachError(Exception):
 
 
 def resolve_stdout_path(pid: int, proc_root: str | Path = "/proc") -> Path:
-    """Return the regular file the pid's stdout is redirected to.
-
-    Raises AttachError with an actionable message otherwise. Cases to handle
-    (each covered by a test):
-    - `<proc_root>/<pid>/fd/1` does not exist → no /proc here (macOS), the
-      pid is gone, or we lack permission — say which is likeliest by whether
-      `<proc_root>` itself exists.
-    - The link resolves to something that is not a regular file (tty device,
-      fifo/pipe, socket) → explain the redirect requirement and suggest
-      `torchwatch run -- <cmd>` or `> train.log 2>&1` next time.
-    - The link resolves to a regular file → return its Path.
-
-    Implementation notes: `os.readlink` / `Path.resolve()` follows the fd
-    symlink; `stat.S_ISREG(path.stat().st_mode)` answers "regular file?".
-    Keep `proc_root` a parameter — the tests point it at a fake /proc tree
-    (real /proc does not exist on this Mac).
-    """
+    """Return the regular file the pid's stdout is redirected to."""
 
     link = Path(proc_root) / str(pid) / "fd" / "1"
     if not link.exists():
         if not Path(proc_root).exists():
             raise AttachError(
-                "no /proc filesystem on thie system (macOS?). pid attach is "
+                "no /proc filesystem on this system (macOS?). pid attach is "
                 "Linux-only; use `torchwatch run -- <cmd>` instead"
             )
         raise AttachError(
@@ -69,7 +53,7 @@ def resolve_stdout_path(pid: int, proc_root: str | Path = "/proc") -> Path:
         )
     
     resolved = link.resolve()
-    if stat.S_ISREG(resolved.stat().st_mode) == False:
+    if not stat.S_ISREG(resolved.stat().st_mode):
         raise AttachError(
             f"pid {pid}: stdout ({link} → {resolved}) is not a redirected log file. "
             "reading a terminal or pipe would steal its output. restart it under "
