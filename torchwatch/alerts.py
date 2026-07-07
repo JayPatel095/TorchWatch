@@ -25,7 +25,7 @@ def vram_suggestion(vram_pct: float) -> str | None:
     if vram_pct < ALERT_PCT:
         return None
     else:
-        return f"vram usage of {vram_pct}% >= alert threshold of {ALERT_PCT}%. recommend trying a smaller batch size, mixed precision (amp/bf16), or gradient checkpointing"
+        return f"vram usage of {round(vram_pct, 1)}% >= alert threshold of {ALERT_PCT}%. recommend trying a smaller batch size, mixed precision (amp/bf16), or gradient checkpointing"
 
 def is_stalled(losses: list[float], window: int = 100, threshold: float = 0.001) -> bool:
     """True when loss has not meaningfully improved across the last `window`.

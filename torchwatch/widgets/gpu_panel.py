@@ -18,12 +18,8 @@ from rich.text import Text
 from textual.reactive import reactive
 from textual.widgets import Static
 
+from torchwatch.alerts import ALERT_PCT, WARN_PCT, vram_suggestion
 from torchwatch.collector.nvidia import GiB, GpuSample
-
-# Color thresholds for VRAM pressure — keep in sync with the M5 alert rules
-# from the brief: >85% yellow (warn), >95% red (alert).
-WARN_PCT = 85.0
-ALERT_PCT = 95.0
 
 
 def pressure_color(pct: float) -> str:
@@ -100,10 +96,10 @@ class GpuPanel(Static):
         text.append("vram ")
         vram_tot = round(sample.vram_total_bytes / GiB, 1)
         vram_use = round(sample.vram_used_bytes / GiB, 1)
-        vram_pct = round(sample.vram_pct)
+        vram_pct = sample.vram_pct
 
         text.append(
-            f"{vram_use}/{vram_tot} GiB ({vram_pct}%) ",
+            f"{vram_use}/{vram_tot} GiB ({round(vram_pct, 1)}%) ",
             style=pressure_color(vram_pct),
         )
 
@@ -114,5 +110,11 @@ class GpuPanel(Static):
             text.append("-- ")
         else:
             text.append(f"{power_w} W ")
+
+        # The alert rule owns the threshold; the panel just renders its verdict.
+        suggestion = vram_suggestion(sample.vram_pct)
+        if suggestion is not None:
+            text.append("\n")
+            text.append(suggestion, style="red")
 
         self.update(text)
