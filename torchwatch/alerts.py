@@ -58,7 +58,7 @@ def is_spiking(losses: list[float], window: int = 20, multiplier: float = 2.0) -
     if len(losses) < window:
         return False                # ignore startup noise
     
-    rolling_mean = sum(losses[-window-1:-1])/(window-1)
+    rolling_mean = sum(losses[-window:-1])/(window-1)
 
     if losses[-1] > rolling_mean * multiplier:
         return True                 # conclude spiking currently
