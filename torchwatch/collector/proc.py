@@ -40,9 +40,10 @@ def iter_process_info() -> Iterator[ProcInfo]:
         try:
             info = proc.info
             try:
+                # AttributeError: psutil removes memory_maps() entirely on macOS
                 maps = tuple(m.path for m in proc.memory_maps(grouped=True))
-            except (psutil.Error, OSError, PermissionError):
-                maps = ()  # macOS / other users' processes: maps unreadable
+            except (psutil.Error, OSError, PermissionError, AttributeError):
+                maps = ()  # unreadable (other users' processes) or unsupported OS
             yield ProcInfo(
                 pid=info["pid"],
                 name=info["name"] or "",
