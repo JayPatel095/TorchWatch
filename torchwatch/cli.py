@@ -69,7 +69,27 @@ def run_training(command: tuple[str, ...], poll: int) -> None:
 @main.command("list")
 def list_processes() -> None:
     """List running PyTorch processes and exit."""
-    click.echo("process detection not implemented yet")
+    import sys
+
+    from torchwatch.collector.proc import find_pytorch_processes
+
+    procs = find_pytorch_processes()
+    if not procs:
+        click.echo("no PyTorch processes found")
+        if sys.platform == "darwin":
+            click.echo(
+                "note: detection reads process maps, which macOS forbids — "
+                "on this machine use `torchwatch run -- <cmd>` instead",
+                err=True,
+            )
+        return
+
+    click.echo(f"{'PID':>7}  COMMAND")
+    for proc in procs:
+        cmd = " ".join(proc.cmdline) or proc.name
+        if len(cmd) > 70:
+            cmd = cmd[:69] + "…"
+        click.echo(f"{proc.pid:>7}  {cmd}")
 
 
 if __name__ == "__main__":
