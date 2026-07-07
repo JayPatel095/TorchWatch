@@ -10,8 +10,60 @@ rules; the panel's colors follow them.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 WARN_PCT = 85.0
 ALERT_PCT = 95.0
+
+
+@dataclass(frozen=True)
+class Alert:
+    """One active alert as shown to the user.
+
+    `key` identifies the condition (e.g. "vram:0", "stall"), so a condition
+    that persists across ticks is one alert, not a stack of duplicates.
+    `first_seen` / `last_seen` are clock readings passed in by the caller.
+    """
+
+    key: str
+    message: str
+    first_seen: float
+    last_seen: float
+
+
+class AlertLog:
+    """Collects rule firings and decides what is currently worth showing.
+
+    The rules (above) are stateless per-tick checks; this class adds time.
+    An alert stays visible ("lingers") for `ttl_s` seconds after the
+    condition was LAST reported, so a one-tick VRAM spike doesn't flash in
+    and out faster than a human can read it.
+
+    All methods take `now` as a parameter instead of reading the clock —
+    the clock is a system boundary, same as `proc_root` in tail.py, so
+    tests can drive time by hand.
+    """
+
+    def __init__(self, ttl_s: float = 10.0) -> None:
+        self.ttl_s = ttl_s
+
+    def report(self, key: str, message: str, now: float) -> None:
+        """Record that `key`'s condition is true at time `now`.
+
+        First report of a key creates the entry (first_seen = now); a
+        repeat report refreshes last_seen and replaces the message (the
+        numbers inside it may have changed) but keeps first_seen.
+        """
+        raise NotImplementedError
+
+    def active(self, now: float) -> list[Alert]:
+        """Alerts still within their lifespan at `now`, oldest first.
+
+        An alert is active while `now - last_seen <= ttl_s`; expired
+        entries are dropped. Ordering by first_seen keeps the display
+        stable — entries don't jump around as newer alerts re-fire.
+        """
+        raise NotImplementedError
 
 
 def vram_suggestion(vram_pct: float) -> str | None:
@@ -64,5 +116,3 @@ def is_spiking(losses: list[float], window: int = 20, multiplier: float = 2.0) -
         return True                 # conclude spiking currently
     else:
         return False
-
-    
