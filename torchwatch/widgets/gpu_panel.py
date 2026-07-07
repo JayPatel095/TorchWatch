@@ -68,14 +68,20 @@ class GpuPanel(Static):
         text = Text()
 
         text.append("util ")
-        util_pct = sample.utilization_pct
+        util_pct = round(sample.utilization_pct)
 
         if util_pct is None:
-            text.append("-- ")
+            text.append("--  ")
             text.append(bar(None))
         else:
-            text.append(f"{round(util_pct)}% ")
+            if util_pct < 10:
+                text.append(f"{round(util_pct)}%   ")
+            elif util_pct < 100:
+                text.append(f"{round(util_pct)}%  ")
+            else:
+                text.append(f"{round(util_pct)}% ")
             text.append(bar(util_pct), style=pressure_color(util_pct))
+
         text.append(" ")
 
         text.append("temp ")
@@ -84,17 +90,20 @@ class GpuPanel(Static):
         if temp_c is None:
             text.append("--  ")
         else:
-            text.append(f"{temp_c}°C ")
+            text.append(
+                f"{temp_c}°C ",
+                style=pressure_color(temp_c/100)
+                )
 
         text.append("\n")
 
         text.append("vram ")
         vram_tot = round(sample.vram_total_bytes / GiB, 1)
         vram_use = round(sample.vram_used_bytes / GiB, 1)
-        vram_pct = sample.vram_pct
+        vram_pct = round(sample.vram_pct)
 
         text.append(
-            f"{vram_use}/{vram_tot} GiB ({round(vram_pct)}%) ",
+            f"{vram_use}/{vram_tot} GiB ({vram_pct}%) ",
             style=pressure_color(vram_pct),
         )
 
