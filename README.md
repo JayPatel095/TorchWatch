@@ -3,6 +3,8 @@
 A btop for your PyTorch GPU jobs: live per-GPU utilization, VRAM pressure, training
 throughput, loss curve, and ETA — all in your terminal, with zero code changes.
 
+![torchwatch demo](docs/demo.gif)
+
 ## Install
 
 ```
@@ -11,10 +13,73 @@ pip install torchwatch
 
 ## Run
 
+The easiest way — launch your training command under torchwatch:
+
 ```
-torchwatch                # auto-detect the first PyTorch process and attach
-torchwatch --pid 12345    # attach to a specific process
-torchwatch list           # list running PyTorch processes
+torchwatch run -- python train.py --epochs 10
 ```
 
-*Work in progress.*
+Your script runs as a child of torchwatch under a pseudo-terminal; its output is
+parsed live, and quitting the dashboard (`q`) terminates it.
+
+Attach to a job that's already running:
+
+```
+torchwatch list           # list running PyTorch processes
+torchwatch --pid 12345    # attach to one of them
+```
+
+Attaching reads the process's stdout via `/proc` (Linux only), and only works when
+stdout is redirected to a file (`python train.py > train.log`). If it isn't,
+torchwatch tells you why and suggests alternatives instead of guessing.
+
+No GPU handy? See the whole dashboard on synthetic data:
+
+```
+torchwatch --demo
+```
+
+## What you get
+
+- **Per-GPU panels** — utilization, VRAM (used/total and a pressure-colored gauge),
+  temperature, power; one tile per device
+- **Loss sparkline** — scrolling curve of recent loss values
+- **Throughput + ETA** — steps/sec over a rolling window, elapsed time, and a
+  time-to-completion estimate that survives epoch restarts
+- **Alerts area** — appears only when something needs attention, and lingers long
+  enough to read:
+  - VRAM above 95% on a specific GPU, with concrete fixes (smaller batch size,
+    mixed precision, gradient checkpointing)
+  - loss stalled (no meaningful change over the last 100 updates)
+  - loss spike (latest value far above the recent average)
+
+Keys: `q` quit · `p` pause
+
+## Supported log formats
+
+torchwatch parses training progress straight from stdout — no imports, no callbacks.
+Detected automatically:
+
+| format | example line |
+|---|---|
+| tqdm | ` 42/500 [00:12<02:15, 3.4it/s, loss=0.693]` |
+| PyTorch Lightning | `Epoch 3/10: 42/500 [... loss=0.693 ...]` |
+| HF Trainer | `{'loss': 0.693, 'learning_rate': 5e-05, 'epoch': 1.2}` |
+| plain | `step 42/500 loss: 0.693` |
+
+The header shows which format was detected. Lines that match nothing are ignored.
+
+## Notes
+
+- GPU stats come from NVML (NVIDIA). Without a usable NVML (e.g. macOS, no driver),
+  torchwatch falls back to clearly-labeled mock data so the dashboard still runs.
+- `--pid` attach and process detection use `/proc` and process memory maps, so they
+  are Linux-only; `torchwatch run` works everywhere.
+
+## Development
+
+```
+pip install -e ".[dev]"
+pytest
+ruff check .
+```
