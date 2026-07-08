@@ -101,6 +101,7 @@ def test_vram_alert_reaches_alert_panel():
         async with app.run_test(size=(120, 30)) as pilot:
             rendered = await _wait_for_alert(app, pilot, "batch")
             assert "vram" in rendered.lower()
+            assert "gpu 0" in rendered.lower()  # says WHICH gpu is under pressure
             # the suggestion lives in the alerts area now, not the GPU panel
             gpu_text = str(app.query_one(GpuPanel).render())
             assert "batch" not in gpu_text.lower()

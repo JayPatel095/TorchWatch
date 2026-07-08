@@ -183,7 +183,9 @@ class TorchwatchApp(App[None]):
 
             suggestion = vram_suggestion(sample.vram_pct)
             if suggestion is not None:
-                self._alert_log.report(f"vram:{sample.index}", suggestion, now)
+                self._alert_log.report(
+                    f"vram:{sample.index}", f"gpu {sample.index}: {suggestion}", now
+                )
 
         # Runs every poll tick, so it also expires alerts whose rules have
         # gone quiet — the metrics loop alone couldn't clear a vram alert.
