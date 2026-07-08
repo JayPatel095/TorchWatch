@@ -18,7 +18,7 @@ from rich.text import Text
 from textual.reactive import reactive
 from textual.widgets import Static
 
-from torchwatch.alerts import ALERT_PCT, WARN_PCT, vram_suggestion
+from torchwatch.alerts import ALERT_PCT, WARN_PCT
 from torchwatch.collector.nvidia import GiB, GpuSample
 
 
@@ -110,11 +110,5 @@ class GpuPanel(Static):
             text.append("-- ")
         else:
             text.append(f"{power_w} W ")
-
-        # The alert rule owns the threshold; the panel just renders its verdict.
-        suggestion = vram_suggestion(sample.vram_pct)
-        if suggestion is not None:
-            text.append("\n")
-            text.append(suggestion, style="red")
 
         self.update(text)

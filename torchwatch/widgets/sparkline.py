@@ -8,10 +8,7 @@ from __future__ import annotations
 
 from collections import deque
 
-from rich.text import Text
 from textual.widgets import Static
-
-from torchwatch.alerts import is_spiking, is_stalled
 
 BLOCKS = "▁▂▃▄▅▆▇█"
 
@@ -60,18 +57,6 @@ class LossSparkline(Static):
         self._values: deque[float] = deque(maxlen=window)
 
     def push(self, loss: float) -> None:
-        """Append one loss value and redraw, flagging stalls and spikes.
-
-        The alert windows (100 for stall, 20 for spike) fit inside this
-        widget's value window, so the deque doubles as the loss history
-        the rules need.
-        """
+        """Append one loss value and redraw."""
         self._values.append(loss)
-        values = list(self._values)
-
-        text = Text(f"{spark(values)}  {values[-1]:.4f}")
-        if is_spiking(values):
-            text.append("  ⚠ spike", style="bold red")
-        if is_stalled(values):
-            text.append("  ⚠ stalled", style="yellow")
-        self.update(text)
+        self.update(f"{spark(list(self._values))}  {self._values[-1]:.4f}")
