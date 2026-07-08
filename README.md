@@ -83,3 +83,21 @@ pip install -e ".[dev]"
 pytest
 ruff check .
 ```
+
+## Planned
+
+Roughly in order of likelihood:
+
+- **More alert rules** — NaN/inf loss (the run is dead, say so immediately),
+  GPU temperature, sustained throughput drops (often a dataloader bottleneck)
+- **Alert logging** — opt-in `--alert-log alerts.log`: a timestamped record of
+  every alert, so a spike at 3am is still explainable at 9am
+- **Configurable thresholds** — `--vram-warn` / `--vram-alert` instead of the
+  built-in 85/95
+- **Generic metric sparklines** — track any `key=value` metric your logs already
+  print (accuracy, val_loss, grad_norm, …) and chart the ones you pick
+- **Appearance** — theme selection, optional extra GPU stats
+- **Config file** — persistent defaults once the flag count justifies it
+- **Raw output pane** — the wrapped process's actual stdout, scrolling under
+  the dashboard
+- **Multi-job dashboard** — one dashboard, several training processes
