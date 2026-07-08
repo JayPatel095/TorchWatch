@@ -29,7 +29,9 @@ def main(ctx: click.Context, pid: int | None, poll: int, no_stdout: bool, demo: 
     if demo:
         from torchwatch.collector.demo import DemoMetrics
 
-        metrics_source = DemoMetrics()
+        # 300 steps @ 0.1s → the full arc (decay, loop, spike alert) shows
+        # inside ~30s, short enough for the README GIF.
+        metrics_source = DemoMetrics(total_steps=300)
     elif pid is not None:
         from torchwatch.collector.tail import AttachError, TailSource
 
