@@ -1,7 +1,7 @@
 # torchwatch
 
-A btop for your PyTorch GPU jobs: live per-GPU utilization, VRAM pressure, training
-throughput, loss curve, and ETA — all in your terminal, with zero code changes.
+A btop for your PyTorch GPU jobs with live per-GPU utilization, VRAM pressure, training
+throughput, loss curve, and ETA, all in your terminal, with zero code changes.
 
 ![torchwatch demo](docs/demo.gif)
 
@@ -13,13 +13,13 @@ pip install torchwatch
 
 ## Run
 
-The easiest way — launch your training command under torchwatch:
+The easiest way is to launch your training command under torchwatch:
 
 ```
 torchwatch run -- python train.py --epochs 10
 ```
 
-Your script runs as a child of torchwatch under a pseudo-terminal; its output is
+Your script runs as a child of torchwatch under a pseudo-terminal. Its output is
 parsed live, and quitting the dashboard (`q`) terminates it.
 
 Attach to a job that's already running:
@@ -33,19 +33,19 @@ Attaching reads the process's stdout via `/proc` (Linux only), and only works wh
 stdout is redirected to a file (`python train.py > train.log`). If it isn't,
 torchwatch tells you why and suggests alternatives instead of guessing.
 
-No GPU handy? See the whole dashboard on synthetic data:
+Smoke-test the dashboard on synthetic data
 
 ```
 torchwatch --demo
 ```
 
-## What you get
+## Current Features
 
 - **Per-GPU panels** — utilization, VRAM (used/total and a pressure-colored gauge),
-  temperature, power; one tile per device
+  temperature, and power with one tile per device
 - **Loss sparkline** — scrolling curve of recent loss values
 - **Throughput + ETA** — steps/sec over a rolling window, elapsed time, and a
-  time-to-completion estimate that survives epoch restarts
+  time-to-completion estimate through epoch restarts
 - **Alerts area** — appears only when something needs attention, and lingers long
   enough to read:
   - VRAM above 95% on a specific GPU, with concrete fixes (smaller batch size,
@@ -57,7 +57,7 @@ Keys: `q` quit · `p` pause
 
 ## Supported log formats
 
-torchwatch parses training progress straight from stdout — no imports, no callbacks.
+torchwatch parses training progress straight from stdout with no imports or callbacks.
 Detected automatically:
 
 | format | example line |
@@ -74,7 +74,7 @@ The header shows which format was detected. Lines that match nothing are ignored
 - GPU stats come from NVML (NVIDIA). Without a usable NVML (e.g. macOS, no driver),
   torchwatch falls back to clearly-labeled mock data so the dashboard still runs.
 - `--pid` attach and process detection use `/proc` and process memory maps, so they
-  are Linux-only; `torchwatch run` works everywhere.
+  are Linux-only. `torchwatch run` works everywhere.
 
 ## Development
 
