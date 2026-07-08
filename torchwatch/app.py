@@ -20,6 +20,7 @@ Architecture — one rule matters here:
 from __future__ import annotations
 
 import time
+from collections import deque
 from typing import Protocol
 
 from textual.app import App, ComposeResult
@@ -28,9 +29,11 @@ from textual.css.query import NoMatches
 from textual.widgets import Footer, Header
 from textual.worker import get_current_worker
 
+from torchwatch.alerts import AlertLog, is_spiking, is_stalled, vram_suggestion
 from torchwatch.collector.nvidia import Collector, GpuSample, create_collector
 from torchwatch.collector.stdout import TrainingUpdate
 from torchwatch.eta import EtaEstimator, format_time
+from torchwatch.widgets.alert_panel import AlertPanel
 from torchwatch.widgets.eta_bar import EtaBar
 from torchwatch.widgets.gpu_panel import GpuPanel
 from torchwatch.widgets.sparkline import LossSparkline
@@ -70,6 +73,12 @@ class TorchwatchApp(App[None]):
         margin: 0 2;
         padding: 0 1;
     }
+    #alert-panel {
+        height: auto;
+        border: round $error;
+        margin: 0 2;
+        padding: 0 1;
+    }
     """
 
     BINDINGS = [
@@ -99,10 +108,15 @@ class TorchwatchApp(App[None]):
         self.metrics_source = metrics_source
         self._eta = EtaEstimator()
         self._start_time = time.time()
+        self._alert_log = AlertLog()
+        # Loss history for the stall/spike rules; 120 covers the stall
+        # window (100) with headroom, matching the sparkline's window.
+        self._losses: deque[float] = deque(maxlen=120)
 
     def compose(self) -> ComposeResult:
         """Header bar, GPU grid, metrics panel, keybinding footer."""
         yield Header(show_clock=True)
+        yield AlertPanel(id="alert-panel")
         yield Grid(id="gpu-grid")
         yield LossSparkline(id="loss-spark")
         yield EtaBar(id="eta-bar")
@@ -157,6 +171,7 @@ class TorchwatchApp(App[None]):
         except NoMatches:
             return
 
+        now = time.monotonic()
         for sample in samples:
             try:
                 panel = grid.query_one(f"#gpu-{sample.index}", GpuPanel)
@@ -165,6 +180,14 @@ class TorchwatchApp(App[None]):
                 grid.mount(panel)
 
             panel.sample = sample
+
+            suggestion = vram_suggestion(sample.vram_pct)
+            if suggestion is not None:
+                self._alert_log.report(f"vram:{sample.index}", suggestion, now)
+
+        # Runs every poll tick, so it also expires alerts whose rules have
+        # gone quiet — the metrics loop alone couldn't clear a vram alert.
+        self._refresh_alerts(now)
 
     def _metrics_loop(self) -> None:
         """Background thread: pull TrainingUpdates and hand off to the UI.
@@ -192,10 +215,26 @@ class TorchwatchApp(App[None]):
         except NoMatches:  # tick landed before the widgets mounted
             return
 
+        now = time.monotonic()
         if update.loss is not None:
             spark_widget.push(update.loss)
+            self._losses.append(update.loss)
+            losses = list(self._losses)
+            if is_spiking(losses):
+                self._alert_log.report(
+                    "loss:spike",
+                    f"loss spiked to {update.loss:.4g} — over 2x the recent average",
+                    now,
+                )
+            if is_stalled(losses):
+                self._alert_log.report(
+                    "loss:stall",
+                    "loss has stalled: no meaningful change over the last 100 updates",
+                    now,
+                )
+            self._refresh_alerts(now)
         if update.step is not None:
-            self._eta.observe(time.monotonic(), update.step)
+            self._eta.observe(now, update.step)
 
         eta = None
         if update.step is not None and update.total_steps:
@@ -208,6 +247,14 @@ class TorchwatchApp(App[None]):
         eta_bar.update_metrics(
             update.step, update.total_steps, self._eta.steps_per_sec(), f_elapsed, f_eta
         )
+
+    def _refresh_alerts(self, now: float) -> None:
+        """UI thread: sync the alerts area with what the log says is live."""
+        try:
+            panel = self.query_one("#alert-panel", AlertPanel)
+        except NoMatches:
+            return
+        panel.show_alerts(self._alert_log.active(now))
 
     def action_toggle_pause(self) -> None:
         """Bound to `p`: toggle polling and the PAUSED marker in the header."""

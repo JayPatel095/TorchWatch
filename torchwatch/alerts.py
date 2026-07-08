@@ -1,8 +1,8 @@
 """Alert logic: VRAM pressure suggestions and loss stall/spike detection.
 
 Pure functions over plain values — no widgets, no threads — so every rule
-is unit-testable. The app wires results into the UI: the GPU panel shows
-the VRAM suggestion, the metrics panel flags stalls and spikes.
+is unit-testable. The app evaluates the rules each tick, feeds firings
+into an AlertLog, and renders `active()` in the dedicated alerts area.
 
 Thresholds live here (not in the widgets) because they ARE the alert
 rules; the panel's colors follow them.
