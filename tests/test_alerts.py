@@ -1,6 +1,6 @@
 """Acceptance tests for alert rules."""
 
-from torchwatch.alerts import is_spiking, is_stalled, vram_suggestion
+from torchwatch.alerts import is_spiking, is_stalled, temp_warning, vram_suggestion
 
 
 def test_no_suggestion_below_alert_threshold():
@@ -47,3 +47,21 @@ def test_steady_loss_no_spike():
 
 def test_spike_needs_a_full_window():
     assert not is_spiking([1.0, 5.0])
+
+
+def test_no_temp_warning_below_alert_threshold():
+    assert temp_warning(72) is None
+    assert temp_warning(99.9) is None  # warn zone colors the panel, no alert yet
+
+
+def test_no_temp_warning_when_sensor_unreadable():
+    assert temp_warning(None) is None
+
+
+def test_temp_warning_at_alert_threshold():
+    hint = temp_warning(100.0)
+    assert hint is not None
+    lowered = hint.lower()
+    # must name at least one physical check — heat isn't fixed in code
+    assert "airflow" in lowered or "fan" in lowered or "cool" in lowered
+    assert temp_warning(107.0) is not None  # and stays on above it

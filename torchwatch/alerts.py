@@ -12,8 +12,14 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-WARN_PCT = 85.0
-ALERT_PCT = 95.0
+VRAM_WARN_PCT = 85.0
+VRAM_ALERT_PCT = 95.0
+
+# Temperature bands sit higher than the VRAM ones: GPUs run hot by design,
+# slowdown-throttling starts around the low 90s, and ~100°C is shutdown
+# territory — warning at 85 would cry wolf on every healthy training run.
+TEMP_WARN_C = 90.0
+TEMP_ALERT_C = 100.0
 
 
 @dataclass(frozen=True)
@@ -90,17 +96,32 @@ class AlertLog:
         return active_alerts
 
 def vram_suggestion(vram_pct: float) -> str | None:
-    """An actionable hint once VRAM crosses ALERT_PCT; None below it.
+    """An actionable hint once VRAM crosses VRAM_ALERT_PCT; None below it.
 
     The brief's three escape hatches, in rising order of effort: reduce
     batch size; mixed precision (torch.cuda.amp, bf16/fp16); gradient
-    checkpointing (torch.utils.checkpoint). One short string naming them —
-    it renders as a single line inside a GPU panel.
+    checkpointing (torch.utils.checkpoint).
     """
-    if vram_pct < ALERT_PCT:
+    if vram_pct < VRAM_ALERT_PCT:
         return None
     else:
-        return f"vram usage of {round(vram_pct, 1)}% >= alert threshold of {ALERT_PCT}%. recommend trying a smaller batch size, mixed precision (amp/bf16), or gradient checkpointing"
+        return f"vram usage of {round(vram_pct, 1)}% >= alert threshold of {VRAM_ALERT_PCT}%. recommend trying a smaller batch size, mixed precision (amp/bf16), or gradient checkpointing"
+
+
+def temp_warning(temp_c: float | None) -> str | None:
+    """An actionable hint once temperature reaches TEMP_ALERT_C; None below it.
+
+    None input (NVML couldn't read the sensor) → None. At/above the
+    threshold the GPU is throttling hard or nearing shutdown: say so and
+    name the physical checks — no batch-size tweak fixes heat.
+    """
+    if temp_c is None or temp_c < TEMP_ALERT_C:
+        return None
+    return (
+        f"temperature of {round(temp_c, 1)}°C >= alert threshold of {TEMP_ALERT_C}°C. "
+        "gpu is throttling or near shutdown — check chassis airflow/dust, "
+        "fan curve, and ambient temperature"
+    )
 
 def is_stalled(losses: list[float], window: int = 100, threshold: float = 0.001) -> bool:
     """True when loss has not meaningfully improved across the last `window`.

@@ -18,16 +18,19 @@ from rich.text import Text
 from textual.reactive import reactive
 from textual.widgets import Static
 
-from torchwatch.alerts import ALERT_PCT, WARN_PCT
+from torchwatch.alerts import TEMP_ALERT_C, TEMP_WARN_C, VRAM_ALERT_PCT, VRAM_WARN_PCT
 from torchwatch.collector.nvidia import GiB, GpuSample
 
 
-def pressure_color(pct: float) -> str:
-    """Map a usage percentage to a Rich color name: green below WARN_PCT,
-    yellow from WARN_PCT to ALERT_PCT, red at ALERT_PCT and above."""
-    if pct < WARN_PCT:
+def pressure_color(
+    value: float, warn: float = VRAM_WARN_PCT, alert: float = VRAM_ALERT_PCT
+) -> str:
+    """Map a value to a Rich color name: green below `warn`, yellow from
+    `warn` to `alert`, red at `alert` and above. Defaults are the VRAM
+    percentage bands; temperature passes its own (TEMP_WARN_C/TEMP_ALERT_C)."""
+    if value < warn:
         return "green"
-    elif WARN_PCT <= pct < ALERT_PCT:
+    elif warn <= value < alert:
         return "yellow"
     else:
         return "red"
@@ -88,8 +91,8 @@ class GpuPanel(Static):
         else:
             text.append(
                 f"{temp_c}°C ",
-                style=pressure_color(temp_c/100)
-                )
+                style=pressure_color(temp_c, warn=TEMP_WARN_C, alert=TEMP_ALERT_C),
+            )
 
         text.append("\n")
 

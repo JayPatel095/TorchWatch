@@ -29,7 +29,7 @@ from textual.css.query import NoMatches
 from textual.widgets import Footer, Header
 from textual.worker import get_current_worker
 
-from torchwatch.alerts import AlertLog, is_spiking, is_stalled, vram_suggestion
+from torchwatch.alerts import AlertLog, is_spiking, is_stalled, temp_warning, vram_suggestion
 from torchwatch.collector.nvidia import Collector, GpuSample, create_collector
 from torchwatch.collector.stdout import TrainingUpdate
 from torchwatch.eta import EtaEstimator, format_time
@@ -185,6 +185,12 @@ class TorchwatchApp(App[None]):
             if suggestion is not None:
                 self._alert_log.report(
                     f"vram:{sample.index}", f"gpu {sample.index}: {suggestion}", now
+                )
+
+            warning = temp_warning(sample.temperature_c)
+            if warning is not None:
+                self._alert_log.report(
+                    f"temp:{sample.index}", f"gpu {sample.index}: {warning}", now
                 )
 
         # Runs every poll tick, so it also expires alerts whose rules have

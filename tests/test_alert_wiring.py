@@ -8,11 +8,20 @@ from torchwatch.alerts import Alert
 from torchwatch.app import TorchwatchApp
 from torchwatch.collector.nvidia import GiB, GpuSample
 from torchwatch.collector.stdout import TrainingUpdate
+from torchwatch.alerts import TEMP_ALERT_C, TEMP_WARN_C
 from torchwatch.widgets.alert_panel import AlertPanel
-from torchwatch.widgets.gpu_panel import GpuPanel
+from torchwatch.widgets.gpu_panel import GpuPanel, pressure_color
 
 
-def _sample(vram_pct: float) -> GpuSample:
+def test_temperature_uses_its_own_color_bands():
+    # regression: temp was passed as temp/100 (or vram bands) — a 96°C GPU
+    # rendered green. With temperature bands, hot must actually look hot.
+    assert pressure_color(72, warn=TEMP_WARN_C, alert=TEMP_ALERT_C) == "green"
+    assert pressure_color(93, warn=TEMP_WARN_C, alert=TEMP_ALERT_C) == "yellow"
+    assert pressure_color(101, warn=TEMP_WARN_C, alert=TEMP_ALERT_C) == "red"
+
+
+def _sample(vram_pct: float, temp_c: int | None = 60) -> GpuSample:
     total = 80 * GiB
     return GpuSample(
         index=0,
@@ -20,7 +29,7 @@ def _sample(vram_pct: float) -> GpuSample:
         utilization_pct=50,
         vram_used_bytes=int(total * vram_pct / 100),
         vram_total_bytes=total,
-        temperature_c=60,
+        temperature_c=temp_c,
         power_w=250.0,
     )
 
@@ -30,14 +39,15 @@ class FakeCollector:
 
     is_mock = True
 
-    def __init__(self, vram_pct: float) -> None:
+    def __init__(self, vram_pct: float, temp_c: int | None = 60) -> None:
         self._vram_pct = vram_pct
+        self._temp_c = temp_c
 
     def gpu_count(self) -> int:
         return 1
 
     def sample(self) -> list[GpuSample]:
-        return [_sample(self._vram_pct)]
+        return [_sample(self._vram_pct, self._temp_c)]
 
 
 class ScriptedSource:
@@ -105,6 +115,17 @@ def test_vram_alert_reaches_alert_panel():
             # the suggestion lives in the alerts area now, not the GPU panel
             gpu_text = str(app.query_one(GpuPanel).render())
             assert "batch" not in gpu_text.lower()
+
+    asyncio.run(scenario())
+
+
+def test_temp_alert_reaches_alert_panel():
+    async def scenario() -> None:
+        app = TorchwatchApp(poll_ms=25, collector=FakeCollector(vram_pct=50.0, temp_c=101))
+        async with app.run_test(size=(120, 30)) as pilot:
+            rendered = await _wait_for_alert(app, pilot, "temperature")
+            assert "gpu 0" in rendered.lower()
+            assert "airflow" in rendered.lower()
 
     asyncio.run(scenario())
 
