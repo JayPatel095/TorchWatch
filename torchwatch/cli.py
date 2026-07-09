@@ -9,10 +9,9 @@ from torchwatch import __version__
 @click.version_option(__version__, prog_name="torchwatch")
 @click.option("--pid", type=int, default=None, help="Attach to a specific PyTorch process.")
 @click.option("--poll", type=int, default=500, help="Poll interval in milliseconds.")
-@click.option("--no-stdout", is_flag=True, help="Disable stdout parsing (shared memory only).")
 @click.option("--demo", is_flag=True, help="Show synthetic training metrics (no process attach).")
 @click.pass_context
-def main(ctx: click.Context, pid: int | None, poll: int, no_stdout: bool, demo: bool) -> None:
+def main(ctx: click.Context, pid: int | None, poll: int, demo: bool) -> None:
     """torchwatch: a btop for your PyTorch GPU jobs.
 
     With no subcommand, auto-detects the first PyTorch process and attaches.
