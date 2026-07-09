@@ -15,15 +15,9 @@ BLOCKS = "▁▂▃▄▅▆▇█"
 
 
 def spark(values: list[float], width: int = 40) -> str:
-    """Map the last `width` values to one block char each.
-
-    Contract:
-    - Empty input → "".
-    - Scale linearly within the visible window: lo→BLOCKS[0], hi→BLOCKS[7],
-      level = round((v - lo) / (hi - lo) * 7).
-    - A flat window (hi == lo) renders mid-blocks: BLOCKS[3] for every value.
-    - Only the most recent `width` values are drawn; older ones scroll off.
-    """
+    """Map the last `width` values to one block char each, scaled linearly
+    within the visible window; a flat window renders mid-blocks; empty
+    input → ""."""
     if not values:
         return ""
     

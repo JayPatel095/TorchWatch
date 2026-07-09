@@ -1,13 +1,8 @@
-"""The dedicated alerts area.
+"""The dedicated alerts area: one line per currently-active alert.
 
-One bordered box listing every currently-active alert, one per line. The
-app owns the AlertLog and calls `show_alerts(log.active(now))` on every
-tick from either worker, so entries appear when a rule fires, linger for
-the log's ttl, and drop out when they expire.
-
-The whole panel hides itself when there is nothing to say — most of the
-time training is healthy and the dashboard shouldn't reserve space for
-an empty box.
+The app owns the AlertLog and calls `show_alerts(log.active(now))` each
+tick. The panel hides itself entirely when there is nothing to say —
+healthy runs shouldn't reserve space for an empty box.
 """
 
 from __future__ import annotations

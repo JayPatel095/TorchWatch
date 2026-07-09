@@ -1,20 +1,15 @@
 """The torchwatch Textual application.
 
-Polls the GPU collector on a background thread and renders one GpuPanel
-per device in a live grid.
+Architecture — one rule matters here: the TUI runs in an async event loop
+on the main thread, pynvml calls block, and widgets are not thread-safe.
+So collectors are polled by background thread workers that never touch
+widgets — results cross to the UI thread via `call_from_thread`:
 
-Architecture — one rule matters here:
-
-    The TUI runs in an async event loop on the main thread. pynvml calls
-    BLOCK, so polling happens in a background *thread* worker. Widgets
-    are NOT thread-safe, so the worker never touches them directly —
-    it hands samples back to the UI thread via `self.call_from_thread`.
-
-        [thread worker]  _poll_loop:  collector.sample() every poll_ms
-               │
-               │  self.call_from_thread(self._apply_samples, samples)
-               ▼
-        [UI thread]      _apply_samples:  mount/update GpuPanel widgets
+    [thread worker]  _poll_loop:  collector.sample() every poll_ms
+           │
+           │  self.call_from_thread(self._apply_samples, samples)
+           ▼
+    [UI thread]      _apply_samples:  mount/update GpuPanel widgets
 """
 
 from __future__ import annotations
@@ -40,9 +35,8 @@ from torchwatch.widgets.sparkline import LossSparkline
 
 
 class MetricsSource(Protocol):
-    """Anything that yields TrainingUpdates: the demo source now, the live
-    stdout reader later. `label` is shown in the header so the user always
-    knows where the numbers come from."""
+    """Anything that yields TrainingUpdates (demo, wrapper, tail). `label`
+    is shown in the header so the user knows where the numbers come from."""
 
     label: str
     interval_s: float
@@ -125,12 +119,8 @@ class TorchwatchApp(App[None]):
         yield Footer()
 
     def on_mount(self) -> None:
-        """Set the header context line and start the polling worker.
-
-        The sub_title shows the watched pid (if any) and a mock-data note
-        when NVML is unavailable, so fake numbers are never mistaken for a
-        real GPU.
-        """
+        """Set the header context line (pid, mock-data note, source label)
+        and start the workers."""
         parts = []
         if self.watched_pid is not None:
             parts.append(f"pid {self.watched_pid}")

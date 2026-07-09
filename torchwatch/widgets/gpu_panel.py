@@ -1,15 +1,12 @@
-"""Per-GPU status panel widget.
-
-Renders one GPU's live stats — utilization, VRAM, temperature, power — as a
-two-line bordered box:
+"""Per-GPU status panel: a two-line bordered box per device.
 
     ┌─ GPU 0 · NVIDIA A100 80GB ────────────────┐
     │ util  94% ██████████████████░░  temp 71°C │
     │ vram 74.2/80.0 GiB (93%)      power 312W  │
     └───────────────────────────────────────────┘
 
-The app owns polling and assigns `panel.sample = <GpuSample>` each tick; the
-`reactive` attribute triggers `watch_sample`, which redraws the widget.
+The app owns polling and assigns `panel.sample = <GpuSample>` each tick;
+the reactive attribute triggers `watch_sample`, which redraws.
 """
 
 from __future__ import annotations
@@ -54,11 +51,8 @@ class GpuPanel(Static):
     sample: reactive[GpuSample | None] = reactive(None)
 
     def watch_sample(self, sample: GpuSample | None) -> None:
-        """Redraw for a fresh sample; no-op until the first poll arrives.
-
-        utilization_pct / temperature_c / power_w may each be None (NVML
-        reports "not supported" on some GPUs) and render as "--".
-        """
+        """Redraw for a fresh sample; None fields (unsupported readings)
+        render as "--"."""
         if sample is None:
             return
 

@@ -1,18 +1,10 @@
 """Log-tail metrics source: attach to a running process whose stdout is a file.
 
-The cluster case: `python train.py > train.log 2>&1 &`. That process's
-stdout is a regular file, and tailing a file is safe — reads steal nothing
-from anyone. We resolve where the pid's stdout points via /proc (Linux),
-verify it is a regular file, and follow appended data through the same
-assembler → parser → queue pipeline the pty wrapper uses.
-
-When stdout is NOT a regular file we must refuse, with a reason the user
-can act on:
-- a tty: reading the terminal device yields keystrokes, not output
-- a pipe: opening it would steal data from the real consumer
-- no /proc (macOS) or no such pid / no permission
-
-`AttachError.message` carries that reason to the CLI.
+The cluster case: `python train.py > train.log 2>&1 &` — tailing a regular
+file steals nothing from anyone. Anything else is refused with an
+actionable AttachError: a tty yields keystrokes rather than output, a pipe
+read would steal data from its real consumer, and macOS has no /proc to
+resolve fd 1 through at all.
 """
 
 from __future__ import annotations
@@ -122,15 +114,18 @@ class TailSource:
                     time.sleep(0.05)  # at EOF: wait for the writer to append
 
     def _parse(self, frame: str) -> None:
+        """Queue the frame's TrainingUpdate, if it parses as one."""
         update = self.parser.parse_line(frame)
         if update is not None:
             self._updates.put(update)
 
     def next_update(self) -> TrainingUpdate | None:
+        """Next queued update, or None when the queue is empty."""
         try:
             return self._updates.get_nowait()
         except queue.Empty:
             return None
 
     def close(self) -> None:
+        """Signal the follow thread to stop."""
         self._stop.set()

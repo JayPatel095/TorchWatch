@@ -18,6 +18,8 @@ GiB = 1024**3
 
 @dataclass(frozen=True)
 class GpuSample:
+    """One GPU's stats at one instant; None fields are unsupported readings."""
+
     index: int
     name: str
     utilization_pct: int | None
@@ -45,9 +47,11 @@ class NvmlCollector:
         self._nv = pynvml
 
     def gpu_count(self) -> int:
+        """Number of NVML-visible devices."""
         return int(self._nv.nvmlDeviceGetCount())
 
     def sample(self) -> list[GpuSample]:
+        """One GpuSample per device, freshly read."""
         samples = []
         for i in range(self.gpu_count()):
             handle = self._nv.nvmlDeviceGetHandleByIndex(i)
@@ -83,6 +87,7 @@ class NvmlCollector:
             return None
 
     def close(self) -> None:
+        """Shut NVML down; safe to call more than once."""
         try:
             self._nv.nvmlShutdown()
         except Exception:
@@ -102,9 +107,11 @@ class MockCollector:
         self._total = 80 * GiB
 
     def gpu_count(self) -> int:
+        """Number of fake devices."""
         return self._count
 
     def sample(self) -> list[GpuSample]:
+        """One wandering fake GpuSample per device."""
         samples = []
         for i in range(self._count):
             self._util[i] = min(100.0, max(55.0, self._util[i] + self._rng.uniform(-4, 4)))
@@ -124,7 +131,7 @@ class MockCollector:
         return samples
 
     def close(self) -> None:
-        pass
+        """Nothing to release."""
 
 
 Collector = NvmlCollector | MockCollector

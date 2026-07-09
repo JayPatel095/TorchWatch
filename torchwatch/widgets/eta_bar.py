@@ -8,6 +8,8 @@ from textual.widgets import Static
 
 
 class EtaBar(Static):
+    """Renders "elapsed X · step A/B · R it/s · ETA Y" from pre-formatted parts."""
+
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.border_title = "progress"
@@ -20,6 +22,7 @@ class EtaBar(Static):
         elapsed_text: str,
         eta_text: str,
     ) -> None:
+        """Rebuild the progress line; None/absent parts render as "—"."""
         if step is not None and total_steps:
             step_txt = f"step {step}/{total_steps}"
         elif step is not None:

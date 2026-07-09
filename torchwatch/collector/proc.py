@@ -1,19 +1,11 @@
 """PyTorch process discovery: powers `torchwatch list` and pid auto-detection.
 
-The system boundary (psutil iteration) is separated from the decision logic
-(is this a PyTorch process?) so the latter is testable with fake data —
-same trick as `proc_root` in tail.py.
-
-Detection evidence, strongest first:
-- a loaded library path containing the torch package (site-packages/torch/)
-  — definitive, but reading another process's maps needs Linux and, for
-  other users' processes, permissions; `maps` is empty when unreadable
-- `torchrun` / `torch.distributed.run` in the command line — definitive
-- a bare python process with NO torch evidence is NOT a match: false
-  positives ("attached to my jupyter kernel?") cost more trust than false
-  negatives, and the wrapper mode always exists as the fallback
-
-torchwatch's own processes must never match (we are a python process too).
+The psutil boundary (iter_process_info) is separate from the decision
+logic so the latter is testable with fakes. Evidence: a loaded /torch/
+library path (maps are empty when unreadable — Linux/permissions), or
+torchrun / torch.distributed.run in the cmdline. A bare python process
+with NO torch evidence is not a match — false positives cost more trust
+than false negatives — and torchwatch itself must never match.
 """
 
 from __future__ import annotations
@@ -28,6 +20,8 @@ import psutil
 
 @dataclass(frozen=True)
 class ProcInfo:
+    """One process's identity and detection evidence, as plain data."""
+
     pid: int
     name: str  # executable name, e.g. "python3.12", "torchrun"
     cmdline: tuple[str, ...]

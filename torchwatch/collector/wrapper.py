@@ -1,15 +1,10 @@
 """Wrapper-mode metrics source: run a training command under a pty we own.
 
-`torchwatch run -- python train.py` spawns the command as our child,
-attached to a pseudo-terminal. Being the parent is what makes the output
-legitimately readable — no attaching tricks, no stolen pipes. The child
-sees a real tty (so tqdm renders its usual progress bars), a daemon thread
-reads raw bytes off the pty master, assembles frames, parses them, and
-queues TrainingUpdates for the UI's metrics worker to drain.
-
-Lifecycle: start() spawns child + reader thread; the reader exits on
-EOF/EIO when the child closes; close() terminates the child if it is
-still alive — quitting the dashboard ends the wrapped run, by design.
+Being the parent is what makes the output legitimately readable — no
+attaching tricks, no stolen pipes. The child sees a real tty (so tqdm
+renders its usual bars); a daemon thread reads the pty master through the
+assembler → parser → queue pipeline. Quitting the dashboard terminates
+the wrapped run, by design.
 """
 
 from __future__ import annotations
@@ -28,6 +23,8 @@ from torchwatch.collector.stream import FrameAssembler
 
 
 class WrapperSource:
+    """MetricsSource that spawns `command` under a pty and parses its output."""
+
     interval_s = 0.05
 
     def __init__(self, command: list[str]) -> None:
@@ -48,9 +45,11 @@ class WrapperSource:
 
     @property
     def pid(self) -> int | None:
+        """Child pid, or None before start()."""
         return self._proc.pid if self._proc is not None else None
 
     def start(self) -> None:
+        """Spawn the child on a fresh pty and start the reader thread."""
         master, slave = os.openpty()
         # Give the child a plausible terminal size so tqdm picks sane ncols.
         fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack("HHHH", 30, 120, 0, 0))
@@ -69,6 +68,7 @@ class WrapperSource:
         ).start()
 
     def _read_loop(self) -> None:
+        """Reader thread: drain the pty until EOF/EIO, then reap the child."""
         assert self._master_fd is not None and self._proc is not None
         try:
             while True:
@@ -84,21 +84,25 @@ class WrapperSource:
         self.exit_code = self._proc.wait()
 
     def _ingest(self, text: str) -> None:
+        """Feed decoded text through the assembler; parse completed frames."""
         for frame in self._assembler.feed(text):
             self._parse(frame)
 
     def _parse(self, frame: str) -> None:
+        """Queue the frame's TrainingUpdate, if it parses as one."""
         update = self.parser.parse_line(frame)
         if update is not None:
             self._updates.put(update)
 
     def next_update(self) -> TrainingUpdate | None:
+        """Next queued update, or None when the queue is empty."""
         try:
             return self._updates.get_nowait()
         except queue.Empty:
             return None
 
     def close(self) -> None:
+        """Terminate (then kill) the child if alive; release the pty."""
         if self._proc is not None and self._proc.poll() is None:
             self._proc.terminate()
             try:

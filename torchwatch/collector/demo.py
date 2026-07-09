@@ -1,10 +1,8 @@
 """Synthetic metrics source powering `torchwatch --demo`.
 
-Produces a plausible decaying-loss training run without any real process
-attached — same TrainingUpdate stream the live stdout reader will emit, so
-the whole metrics pipeline can be exercised (and screen-recorded) anywhere.
-The run loops on completion, which also exercises the ETA estimator's
-step-regression reset.
+Emits the same TrainingUpdate stream the live readers do, so the whole
+metrics pipeline can be exercised (and screen-recorded) anywhere. The run
+loops on completion, which also exercises the ETA step-regression reset.
 """
 
 from __future__ import annotations
@@ -16,6 +14,8 @@ from torchwatch.collector.stdout import TrainingUpdate
 
 
 class DemoMetrics:
+    """A plausible decaying-loss training run with no process attached."""
+
     label = "demo metrics (synthetic)"
     interval_s = 0.1
 
@@ -25,6 +25,7 @@ class DemoMetrics:
         self._step = 0
 
     def next_update(self) -> TrainingUpdate:
+        """Advance one step and return its update; wraps around at the end."""
         self._step += 1
         if self._step > self._total:
             self._step = 1

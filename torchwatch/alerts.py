@@ -1,11 +1,8 @@
-"""Alert logic: VRAM pressure suggestions and loss stall/spike detection.
+"""Alert rules and the AlertLog that decides what is currently shown.
 
-Pure functions over plain values — no widgets, no threads — so every rule
-is unit-testable. The app evaluates the rules each tick, feeds firings
-into an AlertLog, and renders `active()` in the dedicated alerts area.
-
-Thresholds live here (not in the widgets) because they ARE the alert
-rules; the panel's colors follow them.
+Pure logic over plain values — no widgets, no threads — so every rule is
+unit-testable. Thresholds live here because they ARE the alert rules; the
+widgets' colors follow them.
 """
 
 from __future__ import annotations
@@ -24,12 +21,9 @@ TEMP_ALERT_C = 100.0
 
 @dataclass(frozen=True)
 class Alert:
-    """One active alert as shown to the user.
-
-    `key` identifies the condition (e.g. "vram:0", "stall"), so a condition
-    that persists across ticks is one alert, not a stack of duplicates.
-    `first_seen` / `last_seen` are clock readings passed in by the caller.
-    """
+    """One active alert. `key` identifies the condition (e.g. "vram:0"),
+    so a condition persisting across ticks is one alert, not a stack of
+    duplicates."""
 
     key: str
     message: str
@@ -40,14 +34,10 @@ class Alert:
 class AlertLog:
     """Collects rule firings and decides what is currently worth showing.
 
-    The rules (above) are stateless per-tick checks; this class adds time.
-    An alert stays visible ("lingers") for `ttl_s` seconds after the
-    condition was LAST reported, so a one-tick VRAM spike doesn't flash in
-    and out faster than a human can read it.
-
-    All methods take `now` as a parameter instead of reading the clock —
-    the clock is a system boundary, same as `proc_root` in tail.py, so
-    tests can drive time by hand.
+    An alert lingers for `ttl_s` seconds after its condition was last
+    reported, so a one-tick spike doesn't flash faster than a human can
+    read. Methods take `now` as a parameter — the clock is a system
+    boundary — so tests can drive time by hand.
     """
 
     def __init__(self, ttl_s: float = 10.0) -> None:
@@ -55,12 +45,9 @@ class AlertLog:
         self._alerts: dict[str, Alert] = {}
 
     def report(self, key: str, message: str, now: float) -> None:
-        """Record that `key`'s condition is true at time `now`.
-
-        First report of a key creates the entry (first_seen = now); a
-        repeat report refreshes last_seen and replaces the message (the
-        numbers inside it may have changed) but keeps first_seen.
-        """
+        """Record that `key`'s condition is true at `now`: new (and expired)
+        keys start a fresh entry; live ones refresh last_seen and the
+        message but keep first_seen."""
 
         old = self._alerts.get(key)
         if old is not None and (now - old.last_seen) <= self.ttl_s:
@@ -79,12 +66,8 @@ class AlertLog:
             )
 
     def active(self, now: float) -> list[Alert]:
-        """Alerts still within their lifespan at `now`, oldest first.
-
-        An alert is active while `now - last_seen <= ttl_s`; expired
-        entries are dropped. Ordering by first_seen keeps the display
-        stable — entries don't jump around as newer alerts re-fire.
-        """
+        """Alerts with `now - last_seen <= ttl_s`, oldest first — ordering
+        by first_seen keeps the display stable as alerts re-fire."""
         active_alerts = []
 
         for alert in self._alerts.values():
@@ -96,12 +79,7 @@ class AlertLog:
         return active_alerts
 
 def vram_suggestion(vram_pct: float) -> str | None:
-    """An actionable hint once VRAM crosses VRAM_ALERT_PCT; None below it.
-
-    The brief's three escape hatches, in rising order of effort: reduce
-    batch size; mixed precision (torch.cuda.amp, bf16/fp16); gradient
-    checkpointing (torch.utils.checkpoint).
-    """
+    """An actionable hint once VRAM crosses VRAM_ALERT_PCT; None below it."""
     if vram_pct < VRAM_ALERT_PCT:
         return None
     else:
@@ -109,12 +87,8 @@ def vram_suggestion(vram_pct: float) -> str | None:
 
 
 def temp_warning(temp_c: float | None) -> str | None:
-    """An actionable hint once temperature reaches TEMP_ALERT_C; None below it.
-
-    None input (NVML couldn't read the sensor) → None. At/above the
-    threshold the GPU is throttling hard or nearing shutdown: say so and
-    name the physical checks — no batch-size tweak fixes heat.
-    """
+    """An actionable hint once temperature reaches TEMP_ALERT_C; None
+    below it or when the sensor is unreadable (temp_c None)."""
     if temp_c is None or temp_c < TEMP_ALERT_C:
         return None
     return (
@@ -124,12 +98,9 @@ def temp_warning(temp_c: float | None) -> str | None:
     )
 
 def is_stalled(losses: list[float], window: int = 100, threshold: float = 0.001) -> bool:
-    """True when loss has not meaningfully improved across the last `window`.
-
-    Rule: relative range over the window — (max - min) / (max + 1e-8) —
-    is below `threshold`. Fewer than `window` losses → False (not enough
-    evidence to accuse a run of stalling).
-    """
+    """True when the relative range of the last `window` losses —
+    (max - min) / (max + 1e-8) — is below `threshold`; fewer than
+    `window` losses → False."""
     if len(losses) < window:
         return False                # ignore startup noise
     
@@ -145,12 +116,8 @@ def is_stalled(losses: list[float], window: int = 100, threshold: float = 0.001)
         return False
 
 def is_spiking(losses: list[float], window: int = 20, multiplier: float = 2.0) -> bool:
-    """True when the latest loss jumped above `multiplier`x the recent mean.
-
-    Rule: mean of the previous `window - 1` losses (excluding the latest);
-    latest > multiplier x that mean → spike. Fewer than `window` losses
-    → False.
-    """
+    """True when the latest loss exceeds `multiplier`× the mean of the
+    previous `window - 1` losses; fewer than `window` losses → False."""
     if len(losses) < window:
         return False                # ignore startup noise
     
