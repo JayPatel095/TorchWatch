@@ -3,7 +3,9 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "torchwatch"
+# PyPI distribution name; the import package and CLI are still `torchwatch`.
+# (pypi.org/project/torchwatch is an abandoned 0.0.0 placeholder.)
+name = "torchwatch-tui"
 version = "0.1.0"
 description = "A btop for your PyTorch GPU jobs: live terminal dashboard for training runs"
 readme = "README.md"
@@ -31,11 +33,12 @@ dependencies = [
     "nvidia-ml-py",
     "psutil",
     "click",
-    "msgpack",
 ]
 
 [project.urls]
-Homepage = "https://github.com/jaypatel/torchwatch"
+Homepage = "https://github.com/JayPatel095/TorchWatch"
+Repository = "https://github.com/JayPatel095/TorchWatch"
+Issues = "https://github.com/JayPatel095/TorchWatch/issues"
 
 [project.scripts]
 torchwatch = "torchwatch.cli:main"
@@ -49,6 +52,10 @@ dev = [
 
 [tool.hatch.build.targets.wheel]
 packages = ["torchwatch"]
+
+[tool.hatch.build.targets.sdist]
+# Ship the code and tests, not the demo assets or planning docs.
+exclude = ["docs/", "torchwatch_project_brief.md"]
 
 [tool.ruff]
 line-length = 100

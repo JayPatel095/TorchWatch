@@ -3,13 +3,15 @@
 A btop for your PyTorch GPU jobs with live per-GPU utilization, VRAM pressure, training
 throughput, loss curve, and ETA, all in your terminal, with zero code changes.
 
-![torchwatch demo](docs/demo.gif)
+![torchwatch demo](https://raw.githubusercontent.com/JayPatel095/TorchWatch/main/docs/demo.gif)
 
 ## Install
 
 ```
-pip install torchwatch
+pip install torchwatch-tui
 ```
+
+(The command and package are `torchwatch`; only the PyPI name carries the suffix.)
 
 ## Run
 
