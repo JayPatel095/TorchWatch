@@ -49,6 +49,8 @@ class MetricsSource(Protocol):
 
     def next_update(self) -> TrainingUpdate | None: ...
 
+    def close(self) -> None: ...
+
 
 class TorchwatchApp(App[None]):
     TITLE = "torchwatch"
@@ -203,17 +205,20 @@ class TorchwatchApp(App[None]):
         Same lifecycle rules as _poll_loop: exit on worker cancellation or
         on RuntimeError from call_from_thread during shutdown.
         """
+        source = self.metrics_source
+        if source is None:  # worker is only started when a source exists
+            return
         worker = get_current_worker()
 
         while not worker.is_cancelled:
             if not self.paused:
-                update = self.metrics_source.next_update()
+                update = source.next_update()
                 if update is not None:
                     try:
                         self.call_from_thread(self._apply_update, update)
                     except RuntimeError:
                         break
-            time.sleep(self.metrics_source.interval_s)
+            time.sleep(source.interval_s)
 
     def _apply_update(self, update: TrainingUpdate) -> None:
         """UI thread: feed one TrainingUpdate to the sparkline and ETA bar."""

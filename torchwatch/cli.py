@@ -22,9 +22,9 @@ def main(ctx: click.Context, pid: int | None, poll: int, demo: bool) -> None:
     if demo and pid is not None:
         raise click.UsageError("--demo and --pid are mutually exclusive")
 
-    from torchwatch.app import TorchwatchApp
+    from torchwatch.app import MetricsSource, TorchwatchApp
 
-    metrics_source = None
+    metrics_source: MetricsSource | None = None
     if demo:
         from torchwatch.collector.demo import DemoMetrics
 
@@ -34,11 +34,14 @@ def main(ctx: click.Context, pid: int | None, poll: int, demo: bool) -> None:
     elif pid is not None:
         from torchwatch.collector.tail import AttachError, TailSource
 
-        metrics_source = TailSource(pid)
+        # start() is TailSource-specific (not part of the MetricsSource
+        # protocol), so call it before the variable widens to the protocol.
+        tail = TailSource(pid)
         try:
-            metrics_source.start()
+            tail.start()
         except AttachError as exc:
             raise click.ClickException(str(exc)) from exc
+        metrics_source = tail
 
     try:
         TorchwatchApp(poll_ms=poll, pid=pid, metrics_source=metrics_source).run()
