@@ -67,18 +67,18 @@ class GpuPanel(Static):
         text = Text()
 
         text.append("util ")
-        util_pct = round(sample.utilization_pct)
 
-        if util_pct is None:
+        if sample.utilization_pct is None:  # NVML: "not supported" on this GPU
             text.append("--  ")
             text.append(bar(None))
         else:
+            util_pct = round(sample.utilization_pct)
             if util_pct < 10:
-                text.append(f"{round(util_pct)}%   ")
+                text.append(f"{util_pct}%   ")
             elif util_pct < 100:
-                text.append(f"{round(util_pct)}%  ")
+                text.append(f"{util_pct}%  ")
             else:
-                text.append(f"{round(util_pct)}% ")
+                text.append(f"{util_pct}% ")
             text.append(bar(util_pct), style=pressure_color(util_pct))
 
         text.append(" ")
