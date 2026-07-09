@@ -52,7 +52,7 @@ class AlertLog:
 
     def __init__(self, ttl_s: float = 10.0) -> None:
         self.ttl_s = ttl_s
-        self._alerts = {}
+        self._alerts: dict[str, Alert] = {}
 
     def report(self, key: str, message: str, now: float) -> None:
         """Record that `key`'s condition is true at time `now`.
