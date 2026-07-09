@@ -68,6 +68,11 @@ class TailSource:
 
     interval_s = 0.1
 
+    # Two construction paths: __init__ (pid attach) sets both; for_file
+    # (direct file tail) sets neither.
+    pid: int | None
+    _proc_root: str | Path | None
+
     def __init__(self, pid: int, proc_root: str | Path = "/proc") -> None:
         self.pid = pid
         self._proc_root = proc_root
@@ -94,7 +99,8 @@ class TailSource:
 
     def start(self) -> None:
         """Resolve (if attached by pid) and start the follow thread."""
-        if self._path is None:
+        if self._path is None:  # pid-attach path: __init__ guaranteed these
+            assert self.pid is not None and self._proc_root is not None
             self._path = resolve_stdout_path(self.pid, self._proc_root)
         threading.Thread(
             target=self._follow, daemon=True, name="torchwatch-tail"
