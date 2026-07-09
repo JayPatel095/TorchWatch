@@ -7,6 +7,7 @@ The pure mapping lives in `spark()` (unit-tested, no Textual involved);
 from __future__ import annotations
 
 from collections import deque
+from typing import Any
 
 from textual.widgets import Static
 
@@ -51,7 +52,7 @@ def spark(values: list[float], width: int = 40) -> str:
 class LossSparkline(Static):
     """Sparkline of recent loss values with the latest value as a label."""
 
-    def __init__(self, window: int = 120, **kwargs) -> None:
+    def __init__(self, window: int = 120, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.border_title = "loss"
         self._values: deque[float] = deque(maxlen=window)

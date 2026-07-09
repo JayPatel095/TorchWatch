@@ -12,6 +12,8 @@ an empty box.
 
 from __future__ import annotations
 
+from typing import Any
+
 from rich.text import Text
 from textual.widgets import Static
 
@@ -21,7 +23,7 @@ from torchwatch.alerts import Alert
 class AlertPanel(Static):
     """Renders active alerts; collapsed entirely while there are none."""
 
-    def __init__(self, **kwargs) -> None:
+    def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.border_title = "alerts"
         self.display = False

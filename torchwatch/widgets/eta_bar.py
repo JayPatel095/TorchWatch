@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from textual.widgets import Static
 
 
 class EtaBar(Static):
-    def __init__(self, **kwargs) -> None:
+    def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.border_title = "progress"
 
