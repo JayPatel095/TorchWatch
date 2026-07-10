@@ -6,7 +6,8 @@ build-backend = "hatchling.build"
 # PyPI distribution name; the import package and CLI are still `torchwatch`.
 # (pypi.org/project/torchwatch is an abandoned 0.0.0 placeholder.)
 name = "torchwatch-tui"
-version = "0.1.0"
+# Version is single-sourced from torchwatch/__init__.py.
+dynamic = ["version"]
 description = "A btop for your PyTorch GPU jobs: live terminal dashboard for training runs"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -50,6 +51,9 @@ dev = [
     "pytest",
     "types-psutil",
 ]
+
+[tool.hatch.version]
+path = "torchwatch/__init__.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["torchwatch"]

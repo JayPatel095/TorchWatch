@@ -103,3 +103,7 @@ Roughly in order of likelihood:
 - **Raw output pane** — the wrapped process's actual stdout, scrolling under
   the dashboard
 - **Multi-job dashboard** — one dashboard, several training processes
+
+## Note
+
+This is basically just a vibe-coded for fun project, to try out Fable 5. Don't expect too much!
